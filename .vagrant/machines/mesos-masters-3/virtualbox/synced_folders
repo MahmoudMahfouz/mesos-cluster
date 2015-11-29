@@ -1,0 +1,1 @@
+{"virtualbox":{"/vagrant":{"guestpath":"/vagrant","hostpath":"/Users/mm/Downloads/z-labs/my-mesos-cluster","disabled":false},"v-csc-bc6128fb3":{"id":"v-csc-bc6128fb3","guestpath":"/tmp/vagrant-chef/ede02cc817ca1fe0c82fee83385bf984/cookbooks","hostpath":"/Users/mm/Downloads/z-labs/my-mesos-cluster/cookbooks","disabled":false}}}

@@ -1,0 +1,57 @@
+DEPENDENCIES
+  apache_zookeeper
+    git: git://github.com/dcode/apache_zookeeper
+    revision: 8b439485b3c294f55f3d2e5ea812368009dbc3f3
+  cluster-setup
+    path: .
+    metadata: true
+  docker (~> 2.2.9)
+  marathon
+    git: git://github.com/mdsol/marathon_cookbook
+    revision: 7ab2c0cd234b004a23931e092623752aa24da967
+    branch: develop
+  mesos
+    git: git://github.com/mistsys/mesos_cookbook
+    revision: 008f7ddd14a4df083dbf2fc73ea955dd877f7877
+    branch: mistsys/0_25
+
+GRAPH
+  apache_zookeeper (0.6.0)
+    java (>= 0.0.0)
+    ulimit (>= 0.0.0)
+  apt (2.9.2)
+  build-essential (2.2.4)
+  chef-sugar (3.1.1)
+  cluster-setup (0.1.0)
+    apache_zookeeper (>0)
+    docker (~> 2.0)
+    marathon (>0)
+    mesos (>0)
+  compat_resource (12.5.14)
+  docker (2.2.10)
+    compat_resource (>= 12.5.14)
+  java (1.36.0)
+    apt (>= 0.0.0)
+  magic (1.5.0)
+  marathon (2.0.0)
+    apt (>= 0.0.0)
+    java (>= 0.0.0)
+    mesos (>= 0.0.0)
+    yum (>= 0.0.0)
+    zookeeper (>= 0.0.0)
+  mesos (3.4.0)
+    apt (>= 0.0.0)
+    chef-sugar (>= 0.0.0)
+    java (>= 0.0.0)
+    yum (~> 3.0)
+  packagecloud (0.1.1)
+  runit (1.7.4)
+    packagecloud (>= 0.0.0)
+  ulimit (0.3.3)
+  yum (3.8.2)
+  zookeeper (2.13.1)
+    apt (>= 0.0.0)
+    build-essential (>= 2.0.2)
+    java (>= 0.0.0)
+    magic (~> 1.1)
+    runit (>= 0.0.0)

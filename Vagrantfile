@@ -16,7 +16,7 @@ conf = {
     mem: 2048,
     cpu: 1,
     ip_start: "100.0.10.101",
-    count: 2 
+    count: 2
   }
 }
 require "ipaddr"
@@ -26,7 +26,7 @@ require "ipaddr"
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure(2) do |config|
-  
+
   # The most common configuration options are documented and commented below.
   # For a complete reference, please see the online documentation at
   # https://docs.vagrantup.com.
@@ -58,10 +58,11 @@ Vagrant.configure(2) do |config|
       cfg.vm.provision "chef_solo" do |chef|
         mesos_zk = mesos_zookeerpers_host(conf[:masters][:ip_start], 2181, conf[:masters][:count])
         zk_cfg = zookeepers_servers(conf[:masters][:ip_start], conf[:masters][:count], conf[:masters][:zk][:follower_port], conf[:masters][:zk][:election_port])
-        chef.add_recipe "apache_zookeeper"
-        chef.add_recipe "mesos::master"
-        chef.add_recipe "marathon"
-        chef.add_recipe "marathon::service"
+        #chef.add_recipe "apache_zookeeper"
+        #chef.add_recipe "mesos::master"
+        #chef.add_recipe "marathon"
+        #chef.add_recipe "marathon::service"
+        chef.add_recipe "cluster-setup::master"
         chef.json = {
           apache_zookeeper: {
             "zoo.cfg" => zk_cfg
@@ -72,6 +73,7 @@ Vagrant.configure(2) do |config|
             election_port: conf[:masters][:zk][:election_port]
           },
           mesos: {
+            version: '0.25.0',
             master:{
               flags: {
                 :port    => "5050",
@@ -81,7 +83,7 @@ Vagrant.configure(2) do |config|
                 :quorum  => "2",
                 :ip => ip,
                 :hostname => ip,
-              } 
+              }
             }
           },
           marathon:{
@@ -107,7 +109,7 @@ Vagrant.configure(2) do |config|
       cfg.vm.provider :virtualbox do |vb|
         vb.name = "vagrant-#{name}"
         vb.customize ["modifyvm", :id, "--memory", conf[:slaves][:mem], "--cpus", conf[:slaves][:cpu], "--hwvirtex", "on"]
-      end 
+      end
 
       cfg.vm.box = "trusty64"
       cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64    -vagrant-disk1.box"
@@ -117,17 +119,19 @@ Vagrant.configure(2) do |config|
       #### PROVISIONING CONFIG ####
 
       cfg.vm.provision "chef_solo" do |chef|
-        chef.add_recipe "mesos::slave"
-        chef.add_recipe "hostname::default"
+        #chef.add_recipe "mesos::slave"
+        chef.add_recipe "cluster-setup::slave"
         mesos_zk = mesos_zookeerpers_host(conf[:masters][:ip_start], 2181, conf[:masters][:count])
         chef.json = {
           mesos: {
+            version: '0.25.0',
             slave:{
               flags: {
                 master: "zk://#{mesos_zk}/mesos",
                 ip: ip,
-                hostname: ip
-              } 
+                hostname: ip,
+                containerizers: 'docker,mesos'
+              }
             }
           }
         }
@@ -193,7 +197,7 @@ end
 def mesos_zookeerpers_host (starting_ip, port, count)
   masters_array = []
   ip_current = IPAddr.new starting_ip
-  count.times { 
+  count.times {
     masters_array << "#{ip_current.to_string}:#{port}"
     ip_current = ip_current.succ
   }
@@ -203,7 +207,7 @@ end
 def zookeerpers_hosts_array (starting_ip, count)
   masters_array = []
   ip_current = IPAddr.new starting_ip
-  count.times { 
+  count.times {
     masters_array << "#{ip_current.to_string}"
     ip_current = ip_current.succ
   }
@@ -219,8 +223,8 @@ end
 def zookeepers_servers(ip_start, count, follow_port, elected_port)
   ip_current = IPAddr.new ip_start
   ret = {}
-  (count).times do |i| 
-    ret["server.#{i+1}"] = "#{ip_current.to_string}:#{follow_port}:#{elected_port}" 
+  (count).times do |i|
+    ret["server.#{i+1}"] = "#{ip_current.to_string}:#{follow_port}:#{elected_port}"
     ip_current = ip_current.succ
   end
   ret

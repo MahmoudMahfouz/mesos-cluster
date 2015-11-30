@@ -13,10 +13,10 @@ conf = {
     }
   },
  slaves: {
-    mem: 786,
+    mem: 2048,
     cpu: 1,
     ip_start: "100.0.10.101",
-    count:4 
+    count: 2 
   }
 }
 require "ipaddr"
@@ -38,6 +38,7 @@ Vagrant.configure(2) do |config|
 
   (1..conf[:masters][:count]).each do |i|
     name = "mesos-masters-#{i}"
+    ip = get_current_ip(conf[:masters][:ip_start], i)
     config.vm.define name do |cfg|
 
       #### PROVIDER CONFIG ####
@@ -49,7 +50,7 @@ Vagrant.configure(2) do |config|
 
       cfg.vm.box = "trusty64"
       cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64    -vagrant-disk1.box"
-      cfg.vm.network :private_network, ip: get_current_ip(conf[:masters][:ip_start], i)
+      cfg.vm.network :private_network, ip: ip
       cfg.vm.hostname = name
 
       #### PROVISIONING CONFIG ####
@@ -61,19 +62,14 @@ Vagrant.configure(2) do |config|
         chef.add_recipe "mesos::master"
         chef.add_recipe "marathon"
         chef.add_recipe "marathon::service"
-        #chef.add_recipe "hostname::default"
         chef.json = {
-          set_fqdn: "#{name}.ibg.dev",
-          hostname_cookbook: {
-            hostsfile_ip: get_current_ip(conf[:masters][:ip_start], i) 
-          },
           apache_zookeeper: {
             "zoo.cfg" => zk_cfg
           },
           zookeeper: {
             servers: zookeerpers_hosts_array(conf[:masters][:ip_start], conf[:masters][:count]),
-            follower_port: conf[:masters][:zk][:follower_port] ,
-            election_port: conf[:masters][:zk][:election_port] 
+            follower_port: conf[:masters][:zk][:follower_port],
+            election_port: conf[:masters][:zk][:election_port]
           },
           mesos: {
             master:{
@@ -82,17 +78,17 @@ Vagrant.configure(2) do |config|
                 :log_dir => "/var/log/mesos",
                 :zk      => "zk://#{mesos_zk}/mesos",
                 :cluster => "ibg-test-cluster",
-                :quorum  => "2"
+                :quorum  => "2",
+                :ip => ip,
+                :hostname => ip,
               } 
-            },
-            mesosphere: {
-              with_zookeeper: true
             }
           },
           marathon:{
             flags: {
               master: "zk://#{mesos_zk}/mesos",
-              zk: "zk://#{mesos_zk}/marathon"
+              zk: "zk://#{mesos_zk}/marathon",
+              hostname: ip
             }
           }
         }
@@ -103,6 +99,7 @@ Vagrant.configure(2) do |config|
   #### SLAVES ####
   (1..conf[:slaves][:count]).each do |i|
     name = "mesos-slaves-#{i}"
+    ip =  get_current_ip(conf[:slaves][:ip_start], i)
     config.vm.define name do |cfg|
 
       #### PROVIDER CONFIG ####
@@ -114,24 +111,22 @@ Vagrant.configure(2) do |config|
 
       cfg.vm.box = "trusty64"
       cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64    -vagrant-disk1.box"
-      cfg.vm.network :private_network, ip: get_current_ip(conf[:slaves][:ip_start], i)
+      cfg.vm.network :private_network, ip: ip
       cfg.vm.hostname = name
 
       #### PROVISIONING CONFIG ####
 
       cfg.vm.provision "chef_solo" do |chef|
         chef.add_recipe "mesos::slave"
-        #chef.add_recipe "hostname::default"
+        chef.add_recipe "hostname::default"
         mesos_zk = mesos_zookeerpers_host(conf[:masters][:ip_start], 2181, conf[:masters][:count])
         chef.json = {
-          set_fqdn: "#{name}.ibg.dev",
-          hostname_cookbook: {
-            hostsfile_ip: get_current_ip(conf[:slaves][:ip_start], i) 
-          },
           mesos: {
             slave:{
               flags: {
-                :master      => "zk://#{mesos_zk}/mesos",
+                master: "zk://#{mesos_zk}/mesos",
+                ip: ip,
+                hostname: ip
               } 
             }
           }

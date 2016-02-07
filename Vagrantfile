@@ -5,18 +5,18 @@ conf = {
   masters: {
     mem: 1024,
     cpu: 1,
-    ip_start: "100.0.10.11",
     count: 3,
+    ip_start: "192.168.2.50",
     zk: {
       election_port: 3888,
       follower_port: 2888
     }
   },
  slaves: {
-    mem: 2048,
+    mem: 1024,
+    ip_start: "192.168.2.200",
     cpu: 1,
-    ip_start: "100.0.10.101",
-    count: 2
+    count: 4
   }
 }
 require "ipaddr"
@@ -26,6 +26,9 @@ require "ipaddr"
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure(2) do |config|
+  config.omnibus.chef_version = "12.4.0"
+  config.cache.scope = :box
+
 
   # The most common configuration options are documented and commented below.
   # For a complete reference, please see the online documentation at
@@ -49,8 +52,8 @@ Vagrant.configure(2) do |config|
       end
 
       cfg.vm.box = "trusty64"
-      cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64    -vagrant-disk1.box"
-      cfg.vm.network :private_network, ip: ip
+      cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+      cfg.vm.network :public_network, ip: ip, bridge: "eth1"
       cfg.vm.hostname = name
 
       #### PROVISIONING CONFIG ####
@@ -68,7 +71,7 @@ Vagrant.configure(2) do |config|
             "zoo.cfg" => zk_cfg
           },
           zookeeper: {
-            servers: zookeerpers_hosts_array(conf[:masters][:ip_start], conf[:masters][:count]),
+            servers: ip_array(conf[:masters][:ip_start], conf[:masters][:count]),
             follower_port: conf[:masters][:zk][:follower_port],
             election_port: conf[:masters][:zk][:election_port]
           },
@@ -112,8 +115,8 @@ Vagrant.configure(2) do |config|
       end
 
       cfg.vm.box = "trusty64"
-      cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64    -vagrant-disk1.box"
-      cfg.vm.network :private_network, ip: ip
+      cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+      cfg.vm.network :public_network, ip: ip, bridge: "eth1"
       cfg.vm.hostname = name
 
       #### PROVISIONING CONFIG ####
@@ -204,14 +207,14 @@ def mesos_zookeerpers_host (starting_ip, port, count)
   masters_array.join(",")
 end
 
-def zookeerpers_hosts_array (starting_ip, count)
-  masters_array = []
+def ip_array (starting_ip, count)
+  ret = []
   ip_current = IPAddr.new starting_ip
   count.times {
-    masters_array << "#{ip_current.to_string}"
+    ret << "#{ip_current.to_string}"
     ip_current = ip_current.succ
   }
-  masters_array
+  ret
 end
 
 def get_current_ip (ip_start, index)

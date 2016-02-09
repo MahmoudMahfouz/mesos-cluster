@@ -4,3 +4,4 @@ docker_service 'default' do
 end
 
 include_recipe 'mesos::slave'
+include_recipe 'consul'

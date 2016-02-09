@@ -13,10 +13,10 @@ conf = {
     }
   },
  slaves: {
-    mem: 1024,
+    mem: 4096,
     ip_start: "192.168.2.200",
-    cpu: 1,
-    count: 4
+    cpu: 2,
+    count: 2
   }
 }
 require "ipaddr"
@@ -126,6 +126,11 @@ Vagrant.configure(2) do |config|
         chef.add_recipe "cluster-setup::slave"
         mesos_zk = mesos_zookeerpers_host(conf[:masters][:ip_start], 2181, conf[:masters][:count])
         chef.json = {
+	  consul: {
+            config: {
+              start_join: ip_array(conf[:masters][:ip_start], conf[:masters][:count]),
+            }
+          },
           mesos: {
             version: '0.25.0',
             slave:{

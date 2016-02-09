@@ -11,7 +11,8 @@
     "docker": "~> 2.0",
     "mesos": ">0",
     "marathon": ">0",
-    "apache_zookeeper": ">0"
+    "apache_zookeeper": ">0",
+    "consul-cluster": "1.0.0"
   },
   "recommendations": {
   },

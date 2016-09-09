@@ -1,16 +1,22 @@
 # attributes/default.rb
 
-default[:zookeeper][:version]     = '3.4.6'
-default[:zookeeper][:checksum]    = '01b3938547cd620dc4c93efe07c0360411f4a66962a70500b163b59014046994'
+default[:apt][:compile_time_update] = true
+
+default[:zookeeper][:version]     = '3.4.8'
+default[:zookeeper][:checksum]    =
+  'f10a0b51f45c4f64c1fe69ef713abf9eb9571bc7385a82da892e83bb6c965e90'
 default[:zookeeper][:mirror]      = 'http://www.poolsaboveground.com/apache/zookeeper'
 default[:zookeeper][:user]        = 'zookeeper'
+default[:zookeeper][:user_home]   = '/home/zookeeper'
 default[:zookeeper][:install_dir] = '/opt/zookeeper'
 default[:zookeeper][:use_java_cookbook] = true
 default[:zookeeper][:config_dir]  = "#{node[:zookeeper][:install_dir]}/" \
-                                    "zookeeper-#{node[:zookeeper][:version]}/conf"
+                                    'zookeeper-%{zookeeper_version}/conf'
 default[:zookeeper][:conf_file]   = 'zoo.cfg'
-default[:zookeeper][:java_opts] = "-Xms128M -Xmx512M"
-default[:zookeeper][:log_dir]     = "/var/log/zookeeper"
+default[:zookeeper][:java_opts]   = '-Xms128M -Xmx512M'
+default[:zookeeper][:jmx_port]    = '7199'
+default[:zookeeper][:jmx_local]    = 'false'
+default[:zookeeper][:log_dir]     = '/var/log/zookeeper'
 
 # One of: 'upstart', 'runit', 'exhibitor', 'sysv'
 default[:zookeeper][:service_style] = 'runit'
@@ -18,7 +24,9 @@ default[:zookeeper][:service_style] = 'runit'
 default[:zookeeper][:config] = {
   clientPort: 2181,
   dataDir: '/var/lib/zookeeper',
-  tickTime: 2000
+  tickTime: 2000,
+  initLimit: 5,
+  syncLimit: 2
 }
 
 # Set a default value to avoid Ruby errors

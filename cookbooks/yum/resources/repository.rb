@@ -3,7 +3,7 @@
 # Resource:: repository
 #
 # Author:: Sean OMeara <someara@chef.io>
-# Copyright 2013, Chef
+# Copyright 2013-2016, Chef Software, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ actions :create, :delete, :add, :remove, :makecache
 default_action :create
 
 # http://linux.die.net/man/5/yum.conf
-attribute :baseurl, kind_of: String, regex: /.*/, default: nil
+attribute :baseurl, kind_of: [String, Array], regex: /.*/, default: nil
 attribute :cost, kind_of: String, regex: /^\d+$/, default: nil
 attribute :clean_headers, kind_of: [TrueClass, FalseClass], default: false # deprecated
 attribute :clean_metadata, kind_of: [TrueClass, FalseClass], default: true
@@ -56,6 +56,7 @@ attribute :password, kind_of: String, regex: /.*/, default: nil
 attribute :repo_gpgcheck, kind_of: [TrueClass, FalseClass], default: nil
 attribute :report_instanceid, kind_of: [TrueClass, FalseClass], default: nil
 attribute :repositoryid, kind_of: String, regex: /.*/, name_attribute: true
+attribute :sensitive, kind_of: [TrueClass, FalseClass], default: false
 attribute :skip_if_unavailable, kind_of: [TrueClass, FalseClass], default: nil
 attribute :source, kind_of: String, regex: /.*/, default: nil
 attribute :sslcacert, kind_of: String, regex: /.*/, default: nil

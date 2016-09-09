@@ -4,6 +4,6 @@ metadata
 
 cookbook 'docker', '~> 2.2.9'
 cookbook 'apache_zookeeper', git: 'git://github.com/dcode/apache_zookeeper'
-cookbook 'mesos', git: 'git://github.com/mistsys/mesos_cookbook', branch: 'mistsys/0_25'
-cookbook 'marathon', git: 'git://github.com/mdsol/marathon_cookbook', branch: 'develop'
+cookbook 'mesos', git: 'git://github.com/mdsol/mesos_cookbook'
+cookbook 'marathon', git: 'git://github.com/mdsol/marathon_cookbook'
 

@@ -1,9 +1,11 @@
 default['java']['jdk_version']            = '8'
 
 # Marathon package
-default['marathon']['version']            = '0.11.0'
-default['marathon']['source']['url']      = 'http://downloads.mesosphere.com/marathon/v0.11.0/marathon-0.11.0.tgz'
-default['marathon']['source']['checksum'] = 'e6c9de73e6fb9ce7b3ff53ab706bbd427f4479dfce4172c983ff13f7330f600e'
+default['marathon']['version']            = '1.1.1'
+default['marathon']['source']['url']      =
+  "http://downloads.mesosphere.com/marathon/v#{node['marathon']['version']}/marathon-#{node['marathon']['version']}.tgz"
+default['marathon']['source']['checksum'] = '35a80401383f6551c45c676beed30b3c1af6d3ad027f44735c208abe8eaca93d'
+default['marathon']['syslog']             = true
 
 # Marathon user and directories
 default['marathon']['user']               = 'marathon'
@@ -14,4 +16,4 @@ default['marathon']['home']               = '/opt/marathon'
 default['marathon']['jvm']['Xmx512m']     = true
 
 # Marathon command line flags
-default['marathon']['flags']['master']    = 'http://localhost'
+default['marathon']['flags']['master']    = 'zk://localhost:2181/mesos'

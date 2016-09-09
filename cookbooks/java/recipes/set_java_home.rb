@@ -16,26 +16,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ruby_block  "set-env-java-home" do
+ruby_block 'set-env-java-home' do
   block do
-    ENV["JAVA_HOME"] = node['java']['java_home']
+    ENV['JAVA_HOME'] = node['java']['java_home']
   end
-  not_if { ENV["JAVA_HOME"] == node['java']['java_home'] }
+  not_if { ENV['JAVA_HOME'] == node['java']['java_home'] }
 end
 
-directory "/etc/profile.d" do
+directory '/etc/profile.d' do
   mode 00755
 end
 
-file "/etc/profile.d/jdk.sh" do
-  content "export JAVA_HOME=#{node['java']['java_home']}"
+template '/etc/profile.d/jdk.sh' do
+  source 'jdk.sh.erb'
   mode 00755
 end
 
-if node['java']['set_etc_environment']
-  ruby_block "Set JAVA_HOME in /etc/environment" do
+if node['java']['set_etc_environment'] # ~FC023 -- Fails unit test to use guard
+  ruby_block 'Set JAVA_HOME in /etc/environment' do
     block do
-      file = Chef::Util::FileEdit.new("/etc/environment")
+      file = Chef::Util::FileEdit.new('/etc/environment')
       file.insert_line_if_no_match(/^JAVA_HOME=/, "JAVA_HOME=#{node['java']['java_home']}")
       file.search_file_replace_line(/^JAVA_HOME=/, "JAVA_HOME=#{node['java']['java_home']}")
       file.write_file

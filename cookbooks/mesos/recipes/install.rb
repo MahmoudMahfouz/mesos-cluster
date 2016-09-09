@@ -17,8 +17,7 @@
 # limitations under the License.
 #
 
-include_recipe 'chef-sugar'
-include_recipe 'java::default'
+include_recipe 'java'
 
 #
 # Install default repos
@@ -30,9 +29,9 @@ include_recipe 'mesos::repo' if node['mesos']['repo']
 # Install package
 #
 
-case node['platform']
-when 'debian', 'ubuntu'
-  %w( unzip default-jre-headless libcurl3 libsvn1).each do |pkg|
+case node['platform_family']
+when 'debian'
+  %w(unzip default-jre-headless libcurl3 libsvn1).each do |pkg|
     package pkg do
       action :install
     end
@@ -45,24 +44,21 @@ when 'debian', 'ubuntu'
     # Glob is necessary to select the deb version string
     version "#{node['mesos']['version']}*"
   end
-when 'rhel', 'redhat', 'centos', 'amazon', 'scientific'
-  %w( unzip libcurl subversion ).each do |pkg|
+when 'rhel'
+  %w(unzip libcurl subversion).each do |pkg|
     yum_package pkg do
       action :install
     end
   end
 
-  # refresh Yum cache before querying
-  Chef::Provider::Package::Yum::YumCache.instance.refresh
-  # get the version-release string directly from the Yum provider rpmdb
-  rpm_version = Chef::Provider::Package::Yum::YumCache.instance
-                .instance_variable_get('@rpmdb').lookup('mesos')
-                .find { |pkg| pkg.version.v == node['mesos']['version'] }
-                .version.to_s
-
   yum_package 'mesos' do
-    version rpm_version
-    not_if { ::File.exist? '/usr/local/sbin/mesos-master' }
+    version lazy {
+      # get the version-release string directly from the Yum provider rpmdb
+      Chef::Provider::Package::Yum::YumCache
+        .instance.instance_variable_get('@rpmdb').lookup('mesos')
+        .find { |pkg| pkg.version.v == node['mesos']['version'] }
+        .version.to_s
+    }
   end
 end
 
@@ -76,9 +72,10 @@ directory '/etc/mesos-chef'
 template 'mesos-master-init' do
   case node['mesos']['init']
   when 'systemd'
-    path '/usr/lib/systemd/system/mesos-master.service'
+    path '/etc/systemd/system/mesos-master.service'
     source 'systemd.erb'
   when 'sysvinit_debian'
+    mode 0o755
     path '/etc/init.d/mesos-master'
     source 'sysvinit_debian.erb'
   when 'upstart'
@@ -92,9 +89,10 @@ end
 template 'mesos-slave-init' do
   case node['mesos']['init']
   when 'systemd'
-    path '/usr/lib/systemd/system/mesos-slave.service'
+    path '/etc/systemd/system/mesos-slave.service'
     source 'systemd.erb'
   when 'sysvinit_debian'
+    mode 0o755
     path '/etc/init.d/mesos-slave'
     source 'sysvinit_debian.erb'
   when 'upstart'

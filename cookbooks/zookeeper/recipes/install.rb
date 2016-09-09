@@ -20,12 +20,7 @@ else
   Chef::Log.info("Assuming you've provided your own Java")
 end
 
-case node['platform_family']
-when 'debian'
-  node.set['apt']['compile_time_update'] = true
-
-  include_recipe 'apt::default'
-end
+include_recipe 'apt::default' if node['platform_family'] == 'debian'
 
 # build-essential is required to build the zookeeper and json gems
 node.override['build-essential']['compile_time'] = true
@@ -33,6 +28,7 @@ include_recipe 'build-essential::default'
 
 zookeeper node[:zookeeper][:version] do
   user        node[:zookeeper][:user]
+  user_home   node[:zookeeper][:user_home]
   mirror      node[:zookeeper][:mirror]
   checksum    node[:zookeeper][:checksum]
   install_dir node[:zookeeper][:install_dir]

@@ -23,12 +23,13 @@ case node[:zookeeper][:service_style]
 when 'upstart'
   template '/etc/default/zookeeper' do
     source 'environment-defaults.erb'
-    owner 'zookeeper'
-    group 'zookeeper'
+    owner node[:zookeeper][:user]
+    group node[:zookeeper][:user]
     action :create
     mode '0644'
     notifies :restart, 'service[zookeeper]', :delayed
   end
+
   template '/etc/init/zookeeper.conf' do
     source 'zookeeper.upstart.erb'
     owner 'root'
@@ -37,17 +38,20 @@ when 'upstart'
     mode '0644'
     notifies :restart, 'service[zookeeper]', :delayed
   end
+
   service 'zookeeper' do
     provider Chef::Provider::Service::Upstart
-    supports :status => true, :restart => true, :reload => true
+    supports status: true, restart: true, reload: true
     action :enable
   end
 when 'runit'
   # runit_service does not install runit itself
-  include_recipe "runit"
+  include_recipe 'runit'
 
   runit_service 'zookeeper' do
     default_logger true
+    owner node[:zookeeper][:user]
+    group node[:zookeeper][:user]
     options(
       exec: executable_path
     )
@@ -56,12 +60,13 @@ when 'runit'
 when 'sysv'
   template '/etc/default/zookeeper' do
     source 'environment-defaults.erb'
-    owner 'zookeeper'
-    group 'zookeeper'
+    owner node[:zookeeper][:user]
+    group node[:zookeeper][:user]
     action :create
     mode '0644'
     notifies :restart, 'service[zookeeper]', :delayed
   end
+
   template '/etc/init.d/zookeeper' do
     source 'zookeeper.sysv.erb'
     owner 'root'
@@ -78,7 +83,7 @@ when 'sysv'
 
   service 'zookeeper' do
     provider service_provider
-    supports :status => true, :restart => true, :reload => true
+    supports status: true, restart: true, reload: true
     action :enable
   end
 when 'exhibitor'

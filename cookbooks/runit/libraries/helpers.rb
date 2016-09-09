@@ -3,8 +3,8 @@
 # Libraries:: helpers
 #
 # Author: Joshua Timberman <joshua@chef.io>
-# Author: Sean OMeara <sean@chef.io>
-# Copyright 2008-2015, Chef Software, Inc. <legal@chef.io>
+# Author: Sean OMeara <sean@sean.io>
+# Copyright 2008-2016, Chef Software, Inc. <legal@chef.io>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,12 +49,6 @@ module RunitCookbook
       '/etc/init.d'
     end
 
-    # misc helper functions
-    def inside_docker?
-      results = `cat /proc/1/cgroup`.strip.split("\n")
-      results.any? { |val| /docker/ =~ val }
-    end
-
     def down_file
       "#{sv_dir_name}/down"
     end
@@ -82,12 +76,10 @@ module RunitCookbook
     end
 
     def wait_for_service
-      unless inside_docker?
-        sleep 1 until ::FileTest.pipe?("#{service_dir_name}/supervise/ok")
+      sleep 1 until ::FileTest.pipe?("#{service_dir_name}/supervise/ok")
 
-        if new_resource.log
-          sleep 1 until ::FileTest.pipe?("#{service_dir_name}/log/supervise/ok")
-        end
+      if new_resource.log
+        sleep 1 until ::FileTest.pipe?("#{service_dir_name}/log/supervise/ok")
       end
     end
 
@@ -159,6 +151,14 @@ exec svlogd -tt #{new_resource.log_dir}
     def disable_service
       shell_out("#{new_resource.sv_bin} #{sv_args}down #{service_dir_name}")
       FileUtils.rm(service_dir_name)
+
+      # per the documentation, a service should be removed from supervision
+      # within 5 seconds of removing the service dir symlink, so we'll sleep for 6.
+      # otherwise, runit recreates the 'ok' named pipe too quickly
+      sleep(6)
+      # runit will recreate the supervise directory and
+      # pipes when the service is reenabled
+      FileUtils.rm("#{sv_dir_name}/supervise/ok")
     end
 
     def start_service

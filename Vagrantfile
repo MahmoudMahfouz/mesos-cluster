@@ -6,7 +6,7 @@ conf = {
     mem: 1024,
     cpu: 1,
     count: 3,
-    ip_start: "192.168.2.50",
+    ip_start: "192.168.3.50",
     zk: {
       election_port: 3888,
       follower_port: 2888
@@ -14,7 +14,7 @@ conf = {
   },
  slaves: {
     mem: 4096,
-    ip_start: "192.168.2.200",
+    ip_start: "192.168.3.200",
     cpu: 2,
     count: 2
   }
@@ -26,10 +26,6 @@ require "ipaddr"
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure(2) do |config|
-  config.omnibus.chef_version = "12.4.0"
-  config.cache.scope = :box
-
-
   # The most common configuration options are documented and commented below.
   # For a complete reference, please see the online documentation at
   # https://docs.vagrantup.com.
@@ -53,22 +49,35 @@ Vagrant.configure(2) do |config|
 
       cfg.vm.box = "trusty64"
       cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
-      cfg.vm.network :public_network, ip: ip, bridge: "eth1"
+      cfg.vm.network "public_network", ip: ip
       cfg.vm.hostname = name
 
       #### PROVISIONING CONFIG ####
 
       cfg.vm.provision "chef_solo" do |chef|
-        mesos_zk = mesos_zookeerpers_host(conf[:masters][:ip_start], 2181, conf[:masters][:count])
-        zk_cfg = zookeepers_servers(conf[:masters][:ip_start], conf[:masters][:count], conf[:masters][:zk][:follower_port], conf[:masters][:zk][:election_port])
-        #chef.add_recipe "apache_zookeeper"
-        #chef.add_recipe "mesos::master"
-        #chef.add_recipe "marathon"
-        #chef.add_recipe "marathon::service"
+        zk = ip_with_port(conf[:masters][:ip_start], 2181, conf[:masters][:count])
+        zk_full = zookeepers_servers(conf[:masters][:ip_start], conf[:masters][:count], conf[:masters][:zk][:follower_port], conf[:masters][:zk][:election_port])
+
         chef.add_recipe "cluster-setup::master"
         chef.json = {
           apache_zookeeper: {
-            "zoo.cfg" => zk_cfg
+            "zoo.cfg" => zk_full
+          },
+          consul: {
+            ips: ip_with_port(conf[:masters][:ip_start], 8300, conf[:masters][:count]),
+            config: {
+              bind_addr: ip,
+              bootstrap_expect: 3,
+              data_dir: '/etc/consul/conf.d',
+              domain: 'consul',
+              log_level: 'INFO',
+              recursor: '8.8.8.8',
+              rejoin_after_leave: true,
+              retry_join: ip_array(conf[:masters][:ip_start], conf[:masters][:count]),
+              server: true,
+              ui: true,
+              ui_dir: '/opts/consul/ui',
+            }
           },
           zookeeper: {
             servers: ip_array(conf[:masters][:ip_start], conf[:masters][:count]),
@@ -76,24 +85,25 @@ Vagrant.configure(2) do |config|
             election_port: conf[:masters][:zk][:election_port]
           },
           mesos: {
-            version: '0.25.0',
-            master:{
+            version: '1.0.1',
+            master: {
               flags: {
                 :port    => "5050",
                 :log_dir => "/var/log/mesos",
-                :zk      => "zk://#{mesos_zk}/mesos",
+                :zk      => "zk://#{zk}/mesos",
                 :cluster => "ibg-test-cluster",
                 :quorum  => "2",
                 :ip => ip,
-                :hostname => ip,
+                :hostname => name,
               }
             }
           },
-          marathon:{
+          marathon: {
+            version: '1.1.1',
             flags: {
-              master: "zk://#{mesos_zk}/mesos",
-              zk: "zk://#{mesos_zk}/marathon",
-              hostname: ip
+              master: "zk://#{zk}/mesos",
+              zk: "zk://#{zk}/marathon",
+              hostname: name
             }
           }
         }
@@ -124,7 +134,7 @@ Vagrant.configure(2) do |config|
       cfg.vm.provision "chef_solo" do |chef|
         #chef.add_recipe "mesos::slave"
         chef.add_recipe "cluster-setup::slave"
-        mesos_zk = mesos_zookeerpers_host(conf[:masters][:ip_start], 2181, conf[:masters][:count])
+        zk = ip_with_port(conf[:masters][:ip_start], 2181, conf[:masters][:count])
         chef.json = {
 	  consul: {
             config: {
@@ -132,10 +142,10 @@ Vagrant.configure(2) do |config|
             }
           },
           mesos: {
-            version: '0.25.0',
-            slave:{
+            version: '1.0.1',
+            slave: {
               flags: {
-                master: "zk://#{mesos_zk}/mesos",
+                master: "zk://#{zk}/mesos",
                 ip: ip,
                 hostname: ip,
                 containerizers: 'docker,mesos'
@@ -202,7 +212,7 @@ Vagrant.configure(2) do |config|
   # SHELL
 end
 
-def mesos_zookeerpers_host (starting_ip, port, count)
+def ip_with_port (starting_ip, port, count)
   masters_array = []
   ip_current = IPAddr.new starting_ip
   count.times {

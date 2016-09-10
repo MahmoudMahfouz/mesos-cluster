@@ -5,3 +5,7 @@ end
 
 include_recipe 'mesos::slave'
 include_recipe 'consul'
+
+user 'marathon user' do
+  username 'marathon'
+end

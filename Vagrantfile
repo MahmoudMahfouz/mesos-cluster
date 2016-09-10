@@ -49,7 +49,7 @@ Vagrant.configure(2) do |config|
 
       cfg.vm.box = "trusty64"
       cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
-      cfg.vm.network "public_network", ip: ip
+      cfg.vm.network "private_network", ip: ip
       cfg.vm.hostname = name
 
       #### PROVISIONING CONFIG ####
@@ -94,7 +94,7 @@ Vagrant.configure(2) do |config|
                 :cluster => "ibg-test-cluster",
                 :quorum  => "2",
                 :ip => ip,
-                :hostname => name,
+                :hostname => ip,
               }
             }
           },
@@ -103,7 +103,7 @@ Vagrant.configure(2) do |config|
             flags: {
               master: "zk://#{zk}/mesos",
               zk: "zk://#{zk}/marathon",
-              hostname: name
+              hostname: ip
             }
           }
         }
@@ -126,7 +126,7 @@ Vagrant.configure(2) do |config|
 
       cfg.vm.box = "trusty64"
       cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
-      cfg.vm.network :public_network, ip: ip, bridge: "eth1"
+      cfg.vm.network "private_network", ip: ip
       cfg.vm.hostname = name
 
       #### PROVISIONING CONFIG ####
@@ -136,7 +136,7 @@ Vagrant.configure(2) do |config|
         chef.add_recipe "cluster-setup::slave"
         zk = ip_with_port(conf[:masters][:ip_start], 2181, conf[:masters][:count])
         chef.json = {
-	  consul: {
+          consul: {
             config: {
               start_join: ip_array(conf[:masters][:ip_start], conf[:masters][:count]),
             }

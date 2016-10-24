@@ -36,19 +36,36 @@ Vagrant.configure(2) do |config|
   #### MASTERS ####
 
   (1..conf[:masters][:count]).each do |i|
-    name = "mesos-masters-#{i}"
+    name = "m-#{i}"
     ip = get_current_ip(conf[:masters][:ip_start], i)
     config.vm.define name do |cfg|
 
       #### PROVIDER CONFIG ####
+      config.vm.box = "dummy"
+      cfg.vm.provider :aws do |aws, override|
+        aws.instance_type = 'm3.medium'
+        aws.keypair_name = 'instabug'
+        aws.region = 'us-east-1'
 
-      cfg.vm.provider :virtualbox do |vb|
-        vb.name = "vagrant-#{name}"
-        vb.customize ["modifyvm", :id, "--memory", conf[:masters][:mem], "--cpus", conf[:masters][:cpu], "--hwvirtex", "on"]
+        aws.tags = {
+          'Name' => name,
+        }
+        aws.security_groups = ['vagrant']
+
+        aws.ami = 'ami-2d39803a' # Ubuntu
+        override.ssh.username = 'ubuntu'
+        override.ssh.private_key_path = '/Users/mm/.ssh/instabug.pem'
+
+        # aws.ami = 'ami-6d1c2007' # centos
+        # override.ssh.username = 'centos'
       end
+      # cfg.vm.provider :virtualbox do |vb|
+      #   vb.name = "vagrant-#{name}"
+      #   vb.customize ["modifyvm", :id, "--memory", conf[:masters][:mem], "--cpus", conf[:masters][:cpu], "--hwvirtex", "on"]
+      # end
 
-      cfg.vm.box = "trusty64"
-      cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+      # cfg.vm.box = "trusty64"
+      # cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
       cfg.vm.network "private_network", ip: ip
       cfg.vm.hostname = name
 
@@ -66,18 +83,18 @@ Vagrant.configure(2) do |config|
           consul: {
             ips: ip_with_port(conf[:masters][:ip_start], 8300, conf[:masters][:count]),
             config: {
-              bind_addr: ip,
-              bootstrap_expect: 3,
-              data_dir: '/etc/consul/conf.d',
-              domain: 'consul',
-              log_level: 'INFO',
-              recursor: '8.8.8.8',
-              rejoin_after_leave: true,
-              retry_join: ip_array(conf[:masters][:ip_start], conf[:masters][:count]),
-              server: true,
-              ui: true,
-              ui_dir: '/opts/consul/ui',
-            }
+            bind_addr: ip,
+            bootstrap_expect: 3,
+            data_dir: '/etc/consul/conf.d',
+            domain: 'consul',
+            log_level: 'INFO',
+            recursor: '8.8.8.8',
+            rejoin_after_leave: true,
+            retry_join: ip_array(conf[:masters][:ip_start], conf[:masters][:count]),
+            server: true,
+            ui: true,
+            ui_dir: '/opts/consul/ui',
+          }
           },
           zookeeper: {
             servers: ip_array(conf[:masters][:ip_start], conf[:masters][:count]),
@@ -87,24 +104,24 @@ Vagrant.configure(2) do |config|
           mesos: {
             version: '1.0.1',
             master: {
-              flags: {
-                :port    => "5050",
-                :log_dir => "/var/log/mesos",
-                :zk      => "zk://#{zk}/mesos",
-                :cluster => "ibg-test-cluster",
-                :quorum  => "2",
-                :ip => ip,
-                :hostname => ip,
-              }
+            flags: {
+              :port    => "5050",
+              :log_dir => "/var/log/mesos",
+              :zk      => "zk://#{zk}/mesos",
+              :cluster => "ibg-test-cluster",
+              :quorum  => "2",
+              :ip => ip,
+              :hostname => ip,
             }
+          }
           },
           marathon: {
             version: '1.1.1',
             flags: {
-              master: "zk://#{zk}/mesos",
-              zk: "zk://#{zk}/marathon",
-              hostname: ip
-            }
+            master: "zk://#{zk}/mesos",
+            zk: "zk://#{zk}/marathon",
+            hostname: ip
+          }
           }
         }
       end
@@ -118,14 +135,32 @@ Vagrant.configure(2) do |config|
     config.vm.define name do |cfg|
 
       #### PROVIDER CONFIG ####
+      config.vm.box = "dummy"
 
-      cfg.vm.provider :virtualbox do |vb|
-        vb.name = "vagrant-#{name}"
-        vb.customize ["modifyvm", :id, "--memory", conf[:slaves][:mem], "--cpus", conf[:slaves][:cpu], "--hwvirtex", "on"]
+      cfg.vm.provider :aws do |aws, override|
+        aws.instance_type = 'm3.medium'
+        aws.keypair_name = 'instabug'
+        aws.region = 'us-east-1'
+
+        aws.tags = {
+          'Name' => name,
+        }
+        aws.security_groups = ['vagrant']
+
+        aws.ami = 'ami-2d39803a' # Ubuntu
+        override.ssh.username = 'ubuntu'
+        override.ssh.private_key_path = '/Users/mm/.ssh/instabug.pem'
+
+        # aws.ami = 'ami-6d1c2007' # centos
+        # override.ssh.username = 'centos'
       end
+      # cfg.vm.provider :virtualbox do |vb|
+      #   vb.name = "vagrant-#{name}"
+      #   vb.customize ["modifyvm", :id, "--memory", conf[:slaves][:mem], "--cpus", conf[:slaves][:cpu], "--hwvirtex", "on"]
+      # end
 
-      cfg.vm.box = "trusty64"
-      cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+      # cfg.vm.box = "trusty64"
+      # cfg.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
       cfg.vm.network "private_network", ip: ip
       cfg.vm.hostname = name
 
@@ -156,60 +191,6 @@ Vagrant.configure(2) do |config|
       end
     end
   end
-  # Disable automatic box update checking. If you disable this, then
-  # boxes will only be checked for updates when the user runs
-  # `vagrant box outdated`. This is not recommended.
-  # config.vm.box_check_update = false
-
-  # Create a forwarded port mapping which allows access to a specific port
-  # within the machine from a port on the host machine. In the example below,
-  # accessing "localhost:8080" will access port 80 on the guest machine.
-  # config.vm.network "forwarded_port", guest: 80, host: 8080
-
-  # Create a private network, which allows host-only access to the machine
-  # using a specific IP.
-  # config.vm.network "private_network", ip: "192.168.33.10"
-
-  # Create a public network, which generally matched to bridged network.
-  # Bridged networks make the machine appear as another physical device on
-  # your network.
-  # config.vm.network "public_network"
-
-  # Share an additional folder to the guest VM. The first argument is
-  # the path on the host to the actual folder. The second argument is
-  # the path on the guest to mount the folder. And the optional third
-  # argument is a set of non-required options.
-  # config.vm.synced_folder "../data", "/vagrant_data"
-
-  # Provider-specific configuration so you can fine-tune various
-  # backing providers for Vagrant. These expose provider-specific options.
-  # Example for VirtualBox:
-  #
-  # config.vm.provider "virtualbox" do |vb|
-  #   # Display the VirtualBox GUI when booting the machine
-  #   vb.gui = true
-  #
-  #   # Customize the amount of memory on the VM:
-  #   vb.memory = "1024"
-  # end
-  #
-  # View the documentation for the provider you are using for more
-  # information on available options.
-
-  # Define a Vagrant Push strategy for pushing to Atlas. Other push strategies
-  # such as FTP and Heroku are also available. See the documentation at
-  # https://docs.vagrantup.com/v2/push/atlas.html for more information.
-  # config.push.define "atlas" do |push|
-  #   push.app = "YOUR_ATLAS_USERNAME/YOUR_APPLICATION_NAME"
-  # end
-
-  # Enable provisioning with a shell script. Additional provisioners such as
-  # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
-  # documentation for more information about their specific syntax and use.
-  # config.vm.provision "shell", inline: <<-SHELL
-  #   sudo apt-get update
-  #   sudo apt-get install -y apache2
-  # SHELL
 end
 
 def ip_with_port (starting_ip, port, count)
